@@ -1,5 +1,6 @@
 package org.TextToMorse;
 
+import com.epic.morse.service.MorseCode;
 import org.eclipse.paho.mqttv5.client.IMqttToken;
 import org.eclipse.paho.mqttv5.client.MqttCallback;
 import org.eclipse.paho.mqttv5.client.MqttClient;
@@ -13,6 +14,9 @@ public class TextToMorse {
     private static final String clientId = "textToMorse";
     private static final String inputTopic = "E/KeyboardEvent";
     private static final String outputTopic = "E/textInMorse";
+    private static String lastMessageId = "";
+    private static MqttClient mqttClient;
+    private static IMqttToken mqttToken;
     static void main() throws MqttException {
         MqttClient client = new MqttClient(server,clientId);
         client.setCallback(new MqttCallback() {
@@ -30,6 +34,19 @@ public class TextToMorse {
             public void messageArrived(String topic, MqttMessage message) throws Exception {
                 System.out.println("Message arrived. Topic: " + topic +
                         " Message: " + new String(message.getPayload()));
+                String payload = new String(message.getPayload());
+                int start = payload.indexOf("msg: ") + 5;
+                int end = payload.indexOf(" id:");
+                String messageText = payload.substring(start, end).trim();
+                String messageId = payload.substring(end).trim();
+                if (!lastMessageId.equals(messageId)) {
+                    lastMessageId = messageId;
+                    String messageMorse = MorseCode.convertToMorseCode(messageText);
+                    MqttMessage mqttMessage = new MqttMessage(messageMorse.getBytes());
+                    client.publish(outputTopic,mqttMessage);
+
+                }
+
                 //todo: convert to morse before republishing
             }
 
