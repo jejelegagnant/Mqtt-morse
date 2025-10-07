@@ -15,6 +15,7 @@ private static final String eventTopic = "E/KeyboardEvent";
         MqttClient client = new MqttClient(server,clientId);
         client.connect();
         Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter Message: ");
         String input = scanner.nextLine();
         while (!input.equals("quit")) {
             System.out.println(input);
