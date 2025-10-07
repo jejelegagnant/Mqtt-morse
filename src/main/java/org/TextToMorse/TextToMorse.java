@@ -30,6 +30,7 @@ public class TextToMorse {
             public void messageArrived(String topic, MqttMessage message) throws Exception {
                 System.out.println("Message arrived. Topic: " + topic +
                         " Message: " + new String(message.getPayload()));
+                //todo: convert to morse before republishing
             }
 
             @Override
