@@ -9,6 +9,8 @@ import org.eclipse.paho.mqttv5.common.MqttException;
 import org.eclipse.paho.mqttv5.common.MqttMessage;
 import org.eclipse.paho.mqttv5.common.packet.MqttProperties;
 
+import java.util.UUID;
+
 public class TextToMorse {
     private static final String server = "tcp://localhost:1883";
     private static final String clientId = "textToMorse";
@@ -42,12 +44,11 @@ public class TextToMorse {
                 if (!lastMessageId.equals(messageId)) {
                     lastMessageId = messageId;
                     String messageMorse = MorseCode.convertToMorseCode(messageText);
-                    MqttMessage mqttMessage = new MqttMessage(messageMorse.getBytes());
+                    String messageWithId = "msg: " + messageMorse + " id: " + UUID.randomUUID();
+                    MqttMessage mqttMessage = new MqttMessage(messageWithId.getBytes());
                     client.publish(outputTopic,mqttMessage);
 
                 }
-
-                //todo: convert to morse before republishing
             }
 
             @Override
