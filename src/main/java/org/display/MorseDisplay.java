@@ -22,16 +22,16 @@ public class MorseDisplay implements Runnable {
     private static final String inputTopic = "E/textInMorse";
     private static String lastMessageId = "";
 
-    private void defineFrame(){
+    private void defineFrame() {
         frame = new JFrame("Morse Display");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(800,600);
+        frame.setSize(800, 600);
         frame.setResizable(false);
         frame.add(panel());
         frame.setVisible(true);
     }
 
-    private JPanel panel(){
+    private JPanel panel() {
         panel = new JPanel();
         panel.setBackground(Color.BLACK);
         return panel;
@@ -56,7 +56,7 @@ public class MorseDisplay implements Runnable {
 
     public static void main(String[] args) throws MqttException {
         SwingUtilities.invokeLater(new MorseDisplay());
-        MqttClient client = new MqttClient(server,clientId);
+        MqttClient client = new MqttClient(server, clientId);
         client.setCallback(new MqttCallback() {
             @Override
             public void disconnected(MqttDisconnectResponse disconnectResponse) {
@@ -70,26 +70,35 @@ public class MorseDisplay implements Runnable {
 
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
-                System.out.println("Message arrived. Topic: " + topic +
-                        " Message: " + new String(message.getPayload()));
+                System.out.println("Message arrived. Topic: " + topic + " Message: " + new String(message.getPayload()));
+                String payload = new String(message.getPayload());
+                int start = payload.indexOf("msg: ") + 5;
+                int end = payload.indexOf(" id:");
+                String messageMorse = payload.substring(start, end).trim();
+                String messageId = payload.substring(end).trim();
+                if (!lastMessageId.equals(messageId)) {
+                    lastMessageId = messageId;
+                    System.out.println(messageMorse);
+
+                }
             }
 
             @Override
-            public void deliveryComplete(IMqttToken token) {
+            public void deliveryComplete(IMqttToken iMqttToken) {
                 System.out.println("Delivery complete");
             }
 
             @Override
-            public void connectComplete(boolean reconnect, String serverURI) {
-                System.out.println("Connect complete. Reconnect=" + reconnect + " URI=" + serverURI);
+            public void connectComplete(boolean b, String s) {
+                System.out.println("Connected to the server.");
             }
 
             @Override
-            public void authPacketArrived(int reasonCode, MqttProperties properties) {
-                // Not used here
+            public void authPacketArrived(int i, MqttProperties mqttProperties) {
+                System.out.println("Auth packet arrived");
             }
         });
         client.connect();
-        client.subscribe(inputTopic,1);
+        client.subscribe(inputTopic, 1);
     }
 }
