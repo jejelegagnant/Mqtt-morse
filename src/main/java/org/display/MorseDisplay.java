@@ -79,6 +79,20 @@ public class MorseDisplay implements Runnable {
                 if (!lastMessageId.equals(messageId)) {
                     lastMessageId = messageId;
                     System.out.println(messageMorse);
+                    for (int i = 0; i < messageMorse.length(); i++) {
+                        if (messageMorse.charAt(i) == '.'){
+                            System.out.println("c'est un point");
+                        }
+                        else if (messageMorse.charAt(i) == '-'){
+                            System.out.println("c'est un trait");
+                        }
+                        else if (messageMorse.charAt(i) == ' '){
+                            System.out.println("c'est un espace");
+                        }
+                        else {
+                            throw new Exception("c'est cassé");
+                        }
+                    }
 
                 }
             }
