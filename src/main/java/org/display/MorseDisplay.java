@@ -55,7 +55,8 @@ public class MorseDisplay implements Runnable {
 
 
     public static void main(String[] args) throws MqttException {
-        SwingUtilities.invokeLater(new MorseDisplay());
+        MorseDisplay morseDisplay = new MorseDisplay();
+        SwingUtilities.invokeLater(morseDisplay);
         MqttClient client = new MqttClient(server, clientId);
         client.setCallback(new MqttCallback() {
             @Override
@@ -80,14 +81,18 @@ public class MorseDisplay implements Runnable {
                     lastMessageId = messageId;
                     System.out.println(messageMorse);
                     for (int i = 0; i < messageMorse.length(); i++) {
+                        Thread.sleep(500);
                         if (messageMorse.charAt(i) == '.'){
                             System.out.println("c'est un point");
+                            morseDisplay.changePanelColor(Color.RED);
                         }
                         else if (messageMorse.charAt(i) == '-'){
                             System.out.println("c'est un trait");
+                            morseDisplay.changePanelColor(Color.GREEN);
                         }
                         else if (messageMorse.charAt(i) == ' '){
                             System.out.println("c'est un espace");
+                            morseDisplay.changePanelColor(Color.green);
                         }
                         else {
                             throw new Exception("c'est cassé");
