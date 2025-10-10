@@ -1,6 +1,5 @@
 package org.display;
 
-import com.epic.morse.service.MorseCode;
 import org.eclipse.paho.mqttv5.client.IMqttToken;
 import org.eclipse.paho.mqttv5.client.MqttCallback;
 import org.eclipse.paho.mqttv5.client.MqttClient;
@@ -11,22 +10,28 @@ import org.eclipse.paho.mqttv5.common.packet.MqttProperties;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.UUID;
+import java.awt.event.ActionListener;
 
 public class MorseDisplay implements Runnable {
     private JPanel panel;
     private JFrame frame;
 
+    // --- MQTT and Morse Timing Constants ---
     private static final String server = "tcp://localhost:1883";
     private static final String clientId = "morseDisplay";
     private static final String inputTopic = "E/textInMorse";
     private static String lastMessageId = "";
 
-    private static final int morseBaseTime = 100;
-    private static final int dotTime = morseBaseTime;
-    private static final int dashTime = morseBaseTime * 3;
-    private static final int intraCharacterTime = morseBaseTime;
-    private static final int interCharacterTime = morseBaseTime * 3;
+    private static final int MORSE_BASE_TIME = 100; // ms
+    private static final int DOT_TIME = MORSE_BASE_TIME;
+    private static final int DASH_TIME = MORSE_BASE_TIME * 3;
+    private static final int INTRA_CHAR_TIME = MORSE_BASE_TIME; // Time between dots/dashes
+    private static final int INTER_CHAR_TIME = MORSE_BASE_TIME * 3; // Time between letters
+
+    // --- State Management for the Animation ---
+    private String currentMorseMessage;
+    private int morseIndex;
+    private Timer morseTimer;
 
     private void defineFrame() {
         frame = new JFrame("Morse Display");
@@ -43,13 +48,10 @@ public class MorseDisplay implements Runnable {
         return panel;
     }
 
+    // This method is now safe as it's always called from the EDT
     public void changePanelColor(Color newColor) {
-        if (panel != null) {
-            SwingUtilities.invokeLater(() -> {
-                panel.setBackground(newColor);
-                panel.repaint();
-            });
-        }
+        panel.setBackground(newColor);
+        panel.repaint();
     }
 
     @Override
@@ -57,64 +59,107 @@ public class MorseDisplay implements Runnable {
         defineFrame();
     }
 
+    /**
+     * Kicks off the animation for a new Morse code message.
+     */
+    private void displayMorseMessage(String message) {
+        // If an animation is already running, stop it.
+        if (morseTimer != null && morseTimer.isRunning()) {
+            morseTimer.stop();
+        }
+
+        this.currentMorseMessage = message;
+        this.morseIndex = 0;
+        processNextSignal(); // Start processing the first signal
+    }
+
+    /**
+     * Processes one signal (dot, dash, or space) from the message.
+     * It uses a chain of timers to create non-blocking delays.
+     */
+    private void processNextSignal() {
+        // Stop if we've finished the message
+        if (morseIndex >= currentMorseMessage.length()) {
+            changePanelColor(Color.BLACK); // Ensure panel is off
+            return;
+        }
+
+        char signal = currentMorseMessage.charAt(morseIndex);
+        morseIndex++; // Move to the next index for the next call
+
+        switch (signal) {
+            case '.':
+                displaySignal(DOT_TIME);
+                break;
+            case '-':
+                displaySignal(DASH_TIME);
+                break;
+            case ' ':
+                // This is a space between letters, just wait.
+                morseTimer = new Timer(INTER_CHAR_TIME, e -> processNextSignal());
+                morseTimer.setRepeats(false);
+                morseTimer.start();
+                break;
+        }
+    }
+
+    /**
+     * Helper method to display a dot or a dash.
+     * @param signalDuration The time the panel should be lit (DOT_TIME or DASH_TIME).
+     */
+    private void displaySignal(int signalDuration) {
+        changePanelColor(Color.ORANGE);
+
+        // First timer: Turn the panel OFF after the signal duration.
+        // Then, trigger the second timer for the intra-character gap.
+        ActionListener turnOffAction = e -> {
+            changePanelColor(Color.BLACK);
+
+            // Second timer: After the gap, process the next signal.
+            morseTimer = new Timer(INTRA_CHAR_TIME, e2 -> processNextSignal());
+            morseTimer.setRepeats(false);
+            morseTimer.start();
+        };
+
+        morseTimer = new Timer(signalDuration, turnOffAction);
+        morseTimer.setRepeats(false);
+        morseTimer.start();
+    }
+
 
     public static void main(String[] args) throws MqttException {
         MorseDisplay morseDisplay = new MorseDisplay();
         SwingUtilities.invokeLater(morseDisplay);
+
         MqttClient client = new MqttClient(server, clientId);
         client.setCallback(new MqttCallback() {
             @Override
-            public void disconnected(MqttDisconnectResponse disconnectResponse) {
-                System.out.println("Disconnected: " + disconnectResponse.getReasonString());
-            }
+            public void disconnected(MqttDisconnectResponse disconnectResponse) {}
 
             @Override
-            public void mqttErrorOccurred(MqttException exception) {
-                System.out.println("MQTT error: " + exception.getMessage());
-            }
+            public void mqttErrorOccurred(MqttException exception) {}
 
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
+                // This method is now very clean and non-blocking!
                 System.out.println("Message arrived. Topic: " + topic + " Message: " + new String(message.getPayload()));
                 String payload = new String(message.getPayload());
                 int start = payload.indexOf("msg: ") + 5;
                 int end = payload.indexOf(" id:");
                 String messageMorse = payload.substring(start, end).trim();
                 String messageId = payload.substring(end).trim();
+
                 if (!lastMessageId.equals(messageId)) {
                     lastMessageId = messageId;
-                    System.out.println(messageMorse);
-                    for (int i = 0; i < messageMorse.length(); i++) {
-                        if (messageMorse.charAt(i) == '.'){
-                            System.out.println("That's a dot");
-                            Thread.sleep(intraCharacterTime);
-                            morseDisplay.changePanelColor(Color.ORANGE);
-                            Thread.sleep(dotTime);
-                            morseDisplay.changePanelColor(Color.BLACK);
-                        }
-                        else if (messageMorse.charAt(i) == '-'){
-                            System.out.println("that's a dash");
-                            Thread.sleep(intraCharacterTime);
-                            morseDisplay.changePanelColor(Color.ORANGE);
-                            Thread.sleep(dashTime);
-                            morseDisplay.changePanelColor(Color.BLACK);
-                        }
-                        else if (messageMorse.charAt(i) == ' '){
-                            System.out.println("that's a inter-character");
-                            Thread.sleep(interCharacterTime);
-                        }
-                        else {
-                            throw new Exception("c'est cassé");
-                        }
-                    }
+                    System.out.println("Displaying Morse: " + messageMorse);
 
+                    // Safely start the animation on the EDT
+                    SwingUtilities.invokeLater(() -> morseDisplay.displayMorseMessage(messageMorse));
                 }
             }
 
             @Override
-            public void deliveryComplete(IMqttToken iMqttToken) {
-                System.out.println("Delivery complete");
-            }
+            public void deliveryComplete(IMqttToken iMqttToken) {}
 
             @Override
             public void connectComplete(boolean b, String s) {
@@ -122,9 +167,7 @@ public class MorseDisplay implements Runnable {
             }
 
             @Override
-            public void authPacketArrived(int i, MqttProperties mqttProperties) {
-                System.out.println("Auth packet arrived");
-            }
+            public void authPacketArrived(int i, MqttProperties mqttProperties) {}
         });
         client.connect();
         client.subscribe(inputTopic, 1);
