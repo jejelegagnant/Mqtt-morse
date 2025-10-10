@@ -22,6 +22,12 @@ public class MorseDisplay implements Runnable {
     private static final String inputTopic = "E/textInMorse";
     private static String lastMessageId = "";
 
+    private static final int morseBaseTime = 100;
+    private static final int dotTime = morseBaseTime;
+    private static final int dashTime = morseBaseTime * 3;
+    private static final int intraCharacterTime = morseBaseTime;
+    private static final int interCharacterTime = morseBaseTime * 3;
+
     private void defineFrame() {
         frame = new JFrame("Morse Display");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -49,8 +55,6 @@ public class MorseDisplay implements Runnable {
     @Override
     public void run() {
         defineFrame();
-        // Change color after frame is visible
-        changePanelColor(Color.ORANGE);
     }
 
 
@@ -81,18 +85,23 @@ public class MorseDisplay implements Runnable {
                     lastMessageId = messageId;
                     System.out.println(messageMorse);
                     for (int i = 0; i < messageMorse.length(); i++) {
-                        Thread.sleep(500);
                         if (messageMorse.charAt(i) == '.'){
-                            System.out.println("c'est un point");
-                            morseDisplay.changePanelColor(Color.RED);
+                            System.out.println("That's a dot");
+                            Thread.sleep(intraCharacterTime);
+                            morseDisplay.changePanelColor(Color.ORANGE);
+                            Thread.sleep(dotTime);
+                            morseDisplay.changePanelColor(Color.BLACK);
                         }
                         else if (messageMorse.charAt(i) == '-'){
-                            System.out.println("c'est un trait");
-                            morseDisplay.changePanelColor(Color.GREEN);
+                            System.out.println("that's a dash");
+                            Thread.sleep(intraCharacterTime);
+                            morseDisplay.changePanelColor(Color.ORANGE);
+                            Thread.sleep(dashTime);
+                            morseDisplay.changePanelColor(Color.BLACK);
                         }
                         else if (messageMorse.charAt(i) == ' '){
-                            System.out.println("c'est un espace");
-                            morseDisplay.changePanelColor(Color.green);
+                            System.out.println("that's a inter-character");
+                            Thread.sleep(interCharacterTime);
                         }
                         else {
                             throw new Exception("c'est cassé");
