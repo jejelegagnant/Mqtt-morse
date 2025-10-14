@@ -1,10 +1,7 @@
 package org.TextToMorse;
 
 import com.epic.morse.service.MorseCode;
-import org.eclipse.paho.mqttv5.client.IMqttToken;
-import org.eclipse.paho.mqttv5.client.MqttCallback;
-import org.eclipse.paho.mqttv5.client.MqttClient;
-import org.eclipse.paho.mqttv5.client.MqttDisconnectResponse;
+import org.eclipse.paho.mqttv5.client.*;
 import org.eclipse.paho.mqttv5.common.MqttException;
 import org.eclipse.paho.mqttv5.common.MqttMessage;
 import org.eclipse.paho.mqttv5.common.packet.MqttProperties;
@@ -16,11 +13,25 @@ public class TextToMorse {
     private static final String clientId = "textToMorse";
     private static final String inputTopic = "E/KeyboardEvent";
     private static final String outputTopic = "E/textInMorse";
+    private static final String inputStatusTopic = "S/KeyboardEvent";
+    private static final String outputStatusTopic = "S/textInMorse";
     private static String lastMessageId = "";
     private static MqttClient mqttClient;
     private static IMqttToken mqttToken;
     public static void main() throws MqttException {
         MqttClient client = new MqttClient(server,clientId);
+        MqttConnectionOptions options = new MqttConnectionOptions();
+        options.setCleanStart(true);
+        options.setAutomaticReconnect(true);
+
+        byte[] willPayload = "Offline".getBytes();
+        int willQos = 1;
+        boolean willRetained = true;
+        MqttMessage willMessage = new MqttMessage(willPayload);
+        willMessage.setQos(willQos);
+        willMessage.setRetained(willRetained);
+
+        options.setWill(outputStatusTopic, willMessage);
         client.setCallback(new MqttCallback() {
             @Override
             public void disconnected(MqttDisconnectResponse disconnectResponse) {
@@ -37,6 +48,7 @@ public class TextToMorse {
                 System.out.println("Message arrived. Topic: " + topic +
                         " Message: " + new String(message.getPayload()));
                 String payload = new String(message.getPayload());
+                if (topic.equals(inputTopic)){
                 int start = payload.indexOf("msg: ") + 5;
                 int end = payload.indexOf(" id:");
                 String messageText = payload.substring(start, end).trim();
@@ -47,7 +59,15 @@ public class TextToMorse {
                     String messageWithId = "msg: " + messageMorse + " id: " + UUID.randomUUID();
                     MqttMessage mqttMessage = new MqttMessage(messageWithId.getBytes());
                     client.publish(outputTopic,mqttMessage);
-
+                    }
+                }
+                if (topic.equals(inputStatusTopic)){
+                    if (payload.equals("Offline")){
+                        client.publish(outputStatusTopic,new MqttMessage("Error: lost keyboard".getBytes()));
+                    }
+                    else{
+                        client.publish(outputStatusTopic,new MqttMessage("Online".getBytes()));
+                    }
                 }
             }
 
@@ -59,6 +79,12 @@ public class TextToMorse {
             @Override
             public void connectComplete(boolean reconnect, String serverURI) {
                 System.out.println("Connect complete. Reconnect=" + reconnect + " URI=" + serverURI);
+                try {
+                    client.subscribe(inputTopic,1);
+                    client.subscribe(inputStatusTopic,1);
+                } catch (MqttException e) {
+                    throw new RuntimeException(e);
+                }
             }
 
             @Override
@@ -66,8 +92,12 @@ public class TextToMorse {
                 // Not used here
             }
             });
-        client.connect();
-        client.subscribe(inputTopic,1);
+        client.connect(options);
+        MqttMessage onlineMessage = new MqttMessage("Online".getBytes());
+        onlineMessage.setQos(1);
+        onlineMessage.setRetained(true);
+        client.publish(outputStatusTopic, onlineMessage);
+        System.out.println("Online status published" + onlineMessage);
 
 
     }
