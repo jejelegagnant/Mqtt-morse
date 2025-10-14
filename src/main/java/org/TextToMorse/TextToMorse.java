@@ -19,7 +19,7 @@ public class TextToMorse {
     private static String lastMessageId = "";
     private static MqttClient mqttClient;
     private static IMqttToken mqttToken;
-    static void main() throws MqttException {
+    public static void main() throws MqttException {
         MqttClient client = new MqttClient(server,clientId);
         client.setCallback(new MqttCallback() {
             @Override

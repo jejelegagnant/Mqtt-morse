@@ -11,7 +11,7 @@ public class KeyboardEntry {
 private static final String server = "tcp://localhost:1883";
 private static final String clientId = "KeyboardEntry";
 private static final String eventTopic = "E/KeyboardEvent";
-    static void main() throws MqttException {
+    public static void main() throws MqttException {
         MqttClient client = new MqttClient(server,clientId);
         client.connect();
         Scanner scanner = new Scanner(System.in);
