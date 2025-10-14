@@ -22,7 +22,7 @@ public class MorseDisplay implements Runnable {
     private static final String inputTopic = "E/textInMorse";
     private static String lastMessageId = "";
 
-    private static final int MORSE_BASE_TIME = 100; // ms
+    private static final int MORSE_BASE_TIME = 500; // ms
     private static final int DOT_TIME = MORSE_BASE_TIME;
     private static final int DASH_TIME = MORSE_BASE_TIME * 3;
     private static final int INTRA_CHAR_TIME = MORSE_BASE_TIME; // Time between dots/dashes
