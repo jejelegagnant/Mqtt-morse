@@ -33,6 +33,9 @@ public class MorseDisplay implements Runnable {
     private int morseIndex;
     private Timer morseTimer;
 
+    // --- Separate thread to ensure accurate timing
+    private Thread morseAnimatorThread;
+
     private void defineFrame() {
         frame = new JFrame("Morse Display");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -48,7 +51,6 @@ public class MorseDisplay implements Runnable {
         return panel;
     }
 
-    // This method is now safe as it's always called from the EDT
     public void changePanelColor(Color newColor) {
         panel.setBackground(newColor);
         panel.repaint();
@@ -60,17 +62,64 @@ public class MorseDisplay implements Runnable {
     }
 
     /**
-     * Kicks off the animation for a new Morse code message.
+     * Kicks off the animation for a new Morse code message using a dedicated thread for timing.
+     * This approach provides much more reliable timing.
      */
     private void displayMorseMessage(String message) {
-        // If an animation is already running, stop it.
-        if (morseTimer != null && morseTimer.isRunning()) {
-            morseTimer.stop();
+        // If an animation is already running from a previous message, interrupt it.
+        if (morseAnimatorThread != null && morseAnimatorThread.isAlive()) {
+            morseAnimatorThread.interrupt();
         }
 
-        this.currentMorseMessage = message;
-        this.morseIndex = 0;
-        processNextSignal(); // Start processing the first signal
+        // Create and start a new thread for the new message animation.
+        morseAnimatorThread = new Thread(() -> {
+            try {
+                // Loop through each character of the morse string
+                for (char signal : message.toCharArray()) {
+                    // Check if the thread has been interrupted (e.g., by a new message arriving)
+                    if (Thread.currentThread().isInterrupted()) {
+                        throw new InterruptedException();
+                    }
+
+                    switch (signal) {
+                        case '.':
+                            // Turn light ON
+                            SwingUtilities.invokeLater(() -> changePanelColor(Color.ORANGE));
+                            Thread.sleep(DOT_TIME);
+
+                            // Turn light OFF
+                            SwingUtilities.invokeLater(() -> changePanelColor(Color.BLACK));
+                            Thread.sleep(INTRA_CHAR_TIME); // Gap between signals in a letter
+                            break;
+
+                        case '-':
+                            // Turn light ON
+                            SwingUtilities.invokeLater(() -> changePanelColor(Color.ORANGE));
+                            Thread.sleep(DASH_TIME);
+
+                            // Turn light OFF
+                            SwingUtilities.invokeLater(() -> changePanelColor(Color.BLACK));
+                            Thread.sleep(INTRA_CHAR_TIME); // Gap between signals in a letter
+                            break;
+
+                        case ' ':
+                            // A space between letters requires an INTER_CHAR_TIME pause.
+                            // We already paused for INTRA_CHAR_TIME after the last signal,
+                            // so we only need to wait for the remaining time.
+                            Thread.sleep(INTER_CHAR_TIME - INTRA_CHAR_TIME);
+                            break;
+                    }
+                }
+            } catch (InterruptedException e) {
+                // This happens when a new message arrives and interrupts the current animation.
+                // We turn the panel black to clean up the state.
+                System.out.println("Morse animation interrupted.");
+                SwingUtilities.invokeLater(() -> changePanelColor(Color.BLACK));
+                // Restore the interrupted status
+                Thread.currentThread().interrupt();
+            }
+        });
+        morseAnimatorThread.start();
     }
 
     /**
@@ -80,7 +129,7 @@ public class MorseDisplay implements Runnable {
     private void processNextSignal() {
         // Stop if we've finished the message
         if (morseIndex >= currentMorseMessage.length()) {
-            changePanelColor(Color.BLACK); // Ensure panel is off
+            changePanelColor(Color.BLACK);
             return;
         }
 
