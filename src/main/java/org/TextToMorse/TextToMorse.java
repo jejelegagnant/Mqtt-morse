@@ -63,13 +63,13 @@ public class TextToMorse {
                 }
                 if (topic.equals(inputStatusTopic)){
                     if (payload.equals("Offline")){
-                        client.publish(outputStatusTopic,new MqttMessage("Error: lost keyboard".getBytes()));
+                        System.err.println("WARNING: Input source (KeyboardEntry) is offline. Waiting for it to return...");
                     }
                     else{
-                        client.publish(outputStatusTopic,new MqttMessage("Online".getBytes()));
+                        System.out.println("INFO: Input source (KeyboardEntry) is back online.");
+                    }
                     }
                 }
-            }
 
             @Override
             public void deliveryComplete(IMqttToken token) {
