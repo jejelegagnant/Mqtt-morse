@@ -1,9 +1,6 @@
 package org.display;
 
-import org.eclipse.paho.mqttv5.client.IMqttToken;
-import org.eclipse.paho.mqttv5.client.MqttCallback;
-import org.eclipse.paho.mqttv5.client.MqttClient;
-import org.eclipse.paho.mqttv5.client.MqttDisconnectResponse;
+import org.eclipse.paho.mqttv5.client.*;
 import org.eclipse.paho.mqttv5.common.MqttException;
 import org.eclipse.paho.mqttv5.common.MqttMessage;
 import org.eclipse.paho.mqttv5.common.packet.MqttProperties;
@@ -20,6 +17,8 @@ public class MorseDisplay implements Runnable {
     private static final String server = "tcp://localhost:1883";
     private static final String clientId = "morseDisplay";
     private static final String inputTopic = "E/textInMorse";
+    private static final String converterStatusTopic = "S/textInMorse";
+    private static final String keyboardStatusTopic = "S/KeyboardEvent";
     private static String lastMessageId = "";
 
     private static final int MORSE_BASE_TIME = 500; // ms
@@ -181,6 +180,10 @@ public class MorseDisplay implements Runnable {
         SwingUtilities.invokeLater(morseDisplay);
 
         MqttClient client = new MqttClient(server, clientId);
+        MqttConnectionOptions options = new MqttConnectionOptions();
+        options.setCleanStart(true);
+        options.setAutomaticReconnect(true);
+
         client.setCallback(new MqttCallback() {
             @Override
             public void disconnected(MqttDisconnectResponse disconnectResponse) {}
@@ -193,17 +196,37 @@ public class MorseDisplay implements Runnable {
                 // This method is now very clean and non-blocking!
                 System.out.println("Message arrived. Topic: " + topic + " Message: " + new String(message.getPayload()));
                 String payload = new String(message.getPayload());
-                int start = payload.indexOf("msg: ") + 5;
-                int end = payload.indexOf(" id:");
-                String messageMorse = payload.substring(start, end).trim();
-                String messageId = payload.substring(end).trim();
+                if (topic.equals(inputTopic)) {
+                    int start = payload.indexOf("msg: ") + 5;
+                    int end = payload.indexOf(" id:");
+                    String messageMorse = payload.substring(start, end).trim();
+                    String messageId = payload.substring(end).trim();
 
-                if (!lastMessageId.equals(messageId)) {
-                    lastMessageId = messageId;
-                    System.out.println("Displaying Morse: " + messageMorse);
+                    if (!lastMessageId.equals(messageId)) {
+                        lastMessageId = messageId;
+                        System.out.println("Displaying Morse: " + messageMorse);
 
-                    // Safely start the animation on the EDT
-                    SwingUtilities.invokeLater(() -> morseDisplay.displayMorseMessage(messageMorse));
+                        // Safely start the animation on the EDT
+                        SwingUtilities.invokeLater(() -> morseDisplay.displayMorseMessage(messageMorse));
+                    }
+                }
+                else if (topic.equals(converterStatusTopic)) {
+                    if (payload.equals("Offline")){
+                        morseDisplay.morseAnimatorThread.interrupt();
+                        SwingUtilities.invokeLater(() -> morseDisplay.changePanelColor(Color.RED));
+                    }
+                    if (payload.equals("Online")){
+                        SwingUtilities.invokeLater(() -> morseDisplay.changePanelColor(Color.BLACK));
+                    }
+                }
+                else if (topic.equals(keyboardStatusTopic)) {
+                    if (payload.equals("Offline")){
+                        morseDisplay.morseAnimatorThread.interrupt();
+                        SwingUtilities.invokeLater(() -> morseDisplay.changePanelColor(Color.MAGENTA));
+                    }
+                    if (payload.equals("Online")){
+                        SwingUtilities.invokeLater(() -> morseDisplay.changePanelColor(Color.BLACK));
+                    }
                 }
             }
 
@@ -213,12 +236,18 @@ public class MorseDisplay implements Runnable {
             @Override
             public void connectComplete(boolean b, String s) {
                 System.out.println("Connected to the server.");
+                try {
+                    client.subscribe(inputTopic, 1);
+                    client.subscribe(keyboardStatusTopic, 1);
+                    client.subscribe(converterStatusTopic, 1);
+                } catch (MqttException e) {
+                    throw new RuntimeException(e);
+                }
             }
 
             @Override
             public void authPacketArrived(int i, MqttProperties mqttProperties) {}
         });
-        client.connect();
-        client.subscribe(inputTopic, 1);
+        client.connect(options);
     }
 }
