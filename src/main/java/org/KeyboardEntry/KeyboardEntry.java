@@ -42,7 +42,7 @@ private static final String statusTopic = "S/KeyboardEvent";
 
             @Override
             public void messageArrived(String s, MqttMessage mqttMessage) throws Exception {
-                System.out.println("A message has arrived, however no message where expected: " + s);
+                System.err.println("A message has arrived, however no message where expected: " + s);
             }
 
             @Override
