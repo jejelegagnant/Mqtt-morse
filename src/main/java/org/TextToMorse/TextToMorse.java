@@ -16,9 +16,7 @@ public class TextToMorse {
     private static final String inputStatusTopic = "S/KeyboardEvent";
     private static final String outputStatusTopic = "S/textInMorse";
     private static String lastMessageId = "";
-    private static MqttClient mqttClient;
-    private static IMqttToken mqttToken;
-    public static void main() throws MqttException {
+    static void main() throws MqttException {
         MqttClient client = new MqttClient(server,clientId);
         MqttConnectionOptions options = new MqttConnectionOptions();
         options.setCleanStart(true);
