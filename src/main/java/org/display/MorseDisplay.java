@@ -176,7 +176,7 @@ public class MorseDisplay implements Runnable {
     }
 
 
-    public static void main() throws MqttException {
+    static void main() throws MqttException {
         MorseDisplay morseDisplay = new MorseDisplay();
         SwingUtilities.invokeLater(morseDisplay);
 
