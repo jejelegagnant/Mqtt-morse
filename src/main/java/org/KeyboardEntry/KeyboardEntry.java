@@ -13,7 +13,7 @@ private static final String server = "tcp://localhost:1883";
 private static final String clientId = "KeyboardEntry";
 private static final String eventTopic = "E/KeyboardEvent";
 private static final String statusTopic = "S/KeyboardEvent";
-    public static void main() throws MqttException {
+    static void main() throws MqttException {
         MqttClient client = new MqttClient(server,clientId);
         MqttConnectionOptions options = new MqttConnectionOptions();
         options.setCleanStart(true);
@@ -43,6 +43,7 @@ private static final String statusTopic = "S/KeyboardEvent";
             @Override
             public void messageArrived(String s, MqttMessage mqttMessage) throws Exception {
                 System.err.println("A message has arrived, however no message where expected: " + s);
+                throw new RuntimeException("A message has arrived, however no message where expected: " + s);
             }
 
             @Override
@@ -65,7 +66,7 @@ private static final String statusTopic = "S/KeyboardEvent";
         onlineMessage.setQos(1);
         onlineMessage.setRetained(true);
         client.publish(statusTopic, onlineMessage);
-        System.out.println("Online status published" + onlineMessage);
+        System.out.println("Online status published : " + onlineMessage);
         Scanner scanner = new Scanner(System.in);
         System.out.print("Enter Message: ");
         String input = scanner.nextLine();
