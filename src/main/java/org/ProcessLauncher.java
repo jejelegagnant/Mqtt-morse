@@ -6,14 +6,25 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A utility to launch multiple Java applications simultaneously in separate terminal windows.
- * This version is specifically designed for debugging, as it includes commands to keep
- * the terminal windows open after the child process terminates, allowing developers
- * to read error messages.
+ * A utility class to simplify the startup of the entire distributed system.
+ * This launcher automates the process of running each of the three main components
+ * ({@link org.KeyboardEntry.KeyboardEntry}, {@link org.TextToMorse.TextToMorse},
+ * and {@link org.display.MorseDisplay}) in its own separate terminal window.
+ * <p>
+ * It provides a convenient way to start and observe all parts of the distributed
+ * system simultaneously during development and testing. The implementation is
+ * OS-aware, generating the appropriate commands for Windows, macOS, and Linux
+ * environments.
+ *
+ * @version 20.10.2025
  */
 public class ProcessLauncher {
-
-    public static void main(String[] args) {
+    /**
+     * The main entry point for the launcher. It iterates through the defined
+     * application classes and calls {@link #launchProcessInNewTerminal(String)} for each one.
+     *
+     */
+    static void main() {
         System.out.println("Starting Process Launcher...");
 
         // Define the fully qualified names of the main classes to run

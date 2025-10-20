@@ -7,8 +7,23 @@ import org.eclipse.paho.mqttv5.common.packet.MqttProperties;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionListener;
 
+/**
+ * Represents the "actuator" component of the distributed system.
+ * This class subscribes to Morse code events and visually displays them by
+ * simulating a flashing light in a Java Swing GUI. It is the final step in the
+ * process control pipeline, where the processed data is used to effect a change.
+ * <p>
+ * This class addresses the challenge of integrating a network client (MQTT) with
+ * a GUI framework. It correctly handles threading by performing GUI updates on the
+ * Event Dispatch Thread (EDT) using {@code SwingUtilities.invokeLater}, and manages
+ * the animation timing in a separate background thread to avoid freezing the UI.
+ * It also monitors the status of upstream components and provides visual feedback
+ * if one goes offline.
+ *
+ * @author Jérémie Gremaud
+ * @version 20.10.2025
+ */
 public class MorseDisplay implements Runnable {
     private JPanel panel;
     private JFrame frame;
@@ -35,6 +50,9 @@ public class MorseDisplay implements Runnable {
     // --- Separate thread to ensure accurate timing
     private Thread morseAnimatorThread;
 
+    /**
+     * Initializes the main JFrame for the display.
+     */
     private void defineFrame() {
         frame = new JFrame("Morse Display");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -44,25 +62,44 @@ public class MorseDisplay implements Runnable {
         frame.setVisible(true);
     }
 
+    /**
+     * Initializes the JPanel that will act as the flashing light.
+     *
+     * @return The configured JPanel.
+     */
     private JPanel panel() {
         panel = new JPanel();
         panel.setBackground(Color.BLACK);
         return panel;
     }
 
+    /**
+     * Safely changes the background color of the panel. This method must be
+     * called on the Event Dispatch Thread.
+     *
+     * @param newColor The new color for the panel.
+     */
     public void changePanelColor(Color newColor) {
         panel.setBackground(newColor);
         panel.repaint();
     }
 
+    /**
+     * The run method for the Runnable interface. Called by SwingUtilities.invokeLater
+     * to set up the GUI on the Event Dispatch Thread.
+     */
     @Override
     public void run() {
         defineFrame();
     }
 
     /**
-     * Kicks off the animation for a new Morse code message using a dedicated thread for timing.
-     * This approach provides much more reliable timing.
+     * Displays a Morse code message by simulating a flashing light in a background thread.
+     * This method ensures accurate timing using {@code Thread.sleep()} without blocking the GUI.
+     * If a new message arrives while a previous one is being displayed, the old
+     * animation thread is interrupted and a new one is started.
+     *
+     * @param message The Morse code string to be displayed (e.g., "... --- ...").
      */
     private void displayMorseMessage(String message) {
         // If an animation is already running from a previous message, interrupt it.
@@ -121,6 +158,13 @@ public class MorseDisplay implements Runnable {
         morseAnimatorThread.start();
     }
 
+    /**
+     * The main entry point for the MorseDisplay process.
+     * It initializes the GUI on the Event Dispatch Thread and sets up the MQTT client
+     * to receive and process Morse code and status messages.
+     *
+     * @throws MqttException if there is an error connecting to the broker.
+     */
     static void main() throws MqttException {
         MorseDisplay morseDisplay = new MorseDisplay();
         SwingUtilities.invokeLater(morseDisplay);

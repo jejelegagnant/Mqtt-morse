@@ -8,6 +8,19 @@ import org.eclipse.paho.mqttv5.common.packet.MqttProperties;
 
 import java.util.UUID;
 
+/**
+ * Represents the "transformer" component in the distributed Morse code system.
+ * This class acts as an intermediary, subscribing to raw text events from the
+ * {@link org.KeyboardEntry.KeyboardEntry} process and transforming them into Morse code.
+ * <p>
+ * It demonstrates a core principle of process control and event-driven architecture:
+ * consuming events from one topic, applying business logic (the conversion), and
+ * publishing new, enriched events to another topic. This decouples the data source
+ * from the final actuator. It also monitors the status of the input sensor.
+ *
+ * @author Jérémie Gremaud
+ * @version 20.10.2025
+ */
 public class TextToMorse {
     private static final String server = "tcp://localhost:1883";
     private static final String clientId = "textToMorse";
@@ -17,6 +30,15 @@ public class TextToMorse {
     private static final String outputStatusTopic = "S/textInMorse";
     private static String lastMessageId = "";
 
+    /**
+     * The main entry point for the TextToMorse process.
+     * Initializes the MQTT client, sets up subscriptions to the keyboard entry's
+     * event and status topics, and connects to the broker. The main thread terminates
+     * after setup, but the application continues to run via the background MQTT
+     * client thread, which processes incoming messages in the MqttCallback.
+     *
+     * @throws MqttException if there is an error connecting to the broker.
+     */
     static void main() throws MqttException {
         MqttClient client = new MqttClient(server, clientId);
         MqttConnectionOptions options = new MqttConnectionOptions();

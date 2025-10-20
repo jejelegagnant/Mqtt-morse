@@ -8,12 +8,37 @@ import org.eclipse.paho.mqttv5.common.packet.MqttProperties;
 import java.util.Scanner;
 import java.util.UUID;
 
+/**
+ * Represents the "sensor" component in the distributed Morse code system.
+ * This class is responsible for capturing user input from the command line and
+ * publishing it as an event to an MQTT broker. It demonstrates the first step
+ * in a process control pipeline: data acquisition.
+ * <p>
+ * As a publisher, this process is entirely decoupled from the other components.
+ * It also publishes its operational status ("Online"/"Offline") and utilizes the
+ * MQTT Last Will and Testament feature to ensure the system can react if this
+ * component disconnects unexpectedly.
+ *
+ * @author Jérémie Gremaud
+ * @version 20.10.2025
+ */
 public class KeyboardEntry {
     private static final String server = "tcp://localhost:1883";
     private static final String clientId = "KeyboardEntry";
     private static final String eventTopic = "E/KeyboardEvent";
     private static final String statusTopic = "S/KeyboardEvent";
 
+    /**
+     * The main entry point for the KeyboardEntry process.
+     * Initializes and configures the MQTT client, connects to the broker,
+     * and enters a loop to read user input from the console. Publishes each
+     * line of input as a message to the event topic.
+     * <p>
+     * The loop terminates when the user types "quit", at which point the
+     * client performs a graceful shutdown.
+     *
+     * @throws MqttException if there is an error connecting to the broker or publishing messages.
+     */
     static void main() throws MqttException {
         MqttClient client = new MqttClient(server, clientId);
         MqttConnectionOptions options = new MqttConnectionOptions();
