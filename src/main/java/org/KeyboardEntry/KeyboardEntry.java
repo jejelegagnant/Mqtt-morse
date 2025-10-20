@@ -77,6 +77,7 @@ private static final String statusTopic = "S/KeyboardEvent";
             mqttMessage.setQos(1);
             mqttMessage.setRetained(false);
             client.publish(eventTopic, mqttMessage);
+            System.out.println("Enter Message: ");
             input = scanner.nextLine();
         }
         scanner.close();
