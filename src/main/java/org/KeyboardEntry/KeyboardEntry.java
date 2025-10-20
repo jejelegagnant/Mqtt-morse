@@ -78,5 +78,10 @@ private static final String statusTopic = "S/KeyboardEvent";
             client.publish(eventTopic, mqttMessage);
             input = scanner.nextLine();
         }
+        scanner.close();
+        client.publish(statusTopic, willMessage);
+        client.disconnect();
+        client.close();
+        System.out.println("Quit command received, client is stopped");
     }
 }
