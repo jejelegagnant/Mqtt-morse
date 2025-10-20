@@ -16,8 +16,9 @@ public class TextToMorse {
     private static final String inputStatusTopic = "S/KeyboardEvent";
     private static final String outputStatusTopic = "S/textInMorse";
     private static String lastMessageId = "";
+
     static void main() throws MqttException {
-        MqttClient client = new MqttClient(server,clientId);
+        MqttClient client = new MqttClient(server, clientId);
         MqttConnectionOptions options = new MqttConnectionOptions();
         options.setCleanStart(true);
         options.setAutomaticReconnect(true);
@@ -46,28 +47,27 @@ public class TextToMorse {
                 System.out.println("Message arrived. Topic: " + topic +
                         " Message: " + new String(message.getPayload()));
                 String payload = new String(message.getPayload());
-                if (topic.equals(inputTopic)){
-                int start = payload.indexOf("msg: ") + 5;
-                int end = payload.indexOf(" id:");
-                String messageText = payload.substring(start, end).trim();
-                String messageId = payload.substring(end).trim();
-                if (!lastMessageId.equals(messageId)) {
-                    lastMessageId = messageId;
-                    String messageMorse = MorseCode.convertToMorseCode(messageText);
-                    String messageWithId = "msg: " + messageMorse + " id: " + UUID.randomUUID();
-                    MqttMessage mqttMessage = new MqttMessage(messageWithId.getBytes());
-                    client.publish(outputTopic,mqttMessage);
+                if (topic.equals(inputTopic)) {
+                    int start = payload.indexOf("msg: ") + 5;
+                    int end = payload.indexOf(" id:");
+                    String messageText = payload.substring(start, end).trim();
+                    String messageId = payload.substring(end).trim();
+                    if (!lastMessageId.equals(messageId)) {
+                        lastMessageId = messageId;
+                        String messageMorse = MorseCode.convertToMorseCode(messageText);
+                        String messageWithId = "msg: " + messageMorse + " id: " + UUID.randomUUID();
+                        MqttMessage mqttMessage = new MqttMessage(messageWithId.getBytes());
+                        client.publish(outputTopic, mqttMessage);
                     }
                 }
-                if (topic.equals(inputStatusTopic)){
-                    if (payload.equals("Offline")){
+                if (topic.equals(inputStatusTopic)) {
+                    if (payload.equals("Offline")) {
                         System.err.println("WARNING: Input source (KeyboardEntry) is offline. Waiting for it to return...");
-                    }
-                    else{
+                    } else {
                         System.out.println("INFO: Input source (KeyboardEntry) is back online.");
                     }
-                    }
                 }
+            }
 
             @Override
             public void deliveryComplete(IMqttToken token) {
@@ -78,8 +78,8 @@ public class TextToMorse {
             public void connectComplete(boolean reconnect, String serverURI) {
                 System.out.println("Connect complete. Reconnect=" + reconnect + " URI=" + serverURI);
                 try {
-                    client.subscribe(inputTopic,1);
-                    client.subscribe(inputStatusTopic,1);
+                    client.subscribe(inputTopic, 1);
+                    client.subscribe(inputStatusTopic, 1);
                 } catch (MqttException e) {
                     throw new RuntimeException(e);
                 }
@@ -89,7 +89,7 @@ public class TextToMorse {
             public void authPacketArrived(int reasonCode, MqttProperties properties) {
                 // Not used here
             }
-            });
+        });
         client.connect(options);
         MqttMessage onlineMessage = new MqttMessage("Online".getBytes());
         onlineMessage.setQos(1);

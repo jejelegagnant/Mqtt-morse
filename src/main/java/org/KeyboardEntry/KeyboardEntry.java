@@ -9,12 +9,13 @@ import java.util.Scanner;
 import java.util.UUID;
 
 public class KeyboardEntry {
-private static final String server = "tcp://localhost:1883";
-private static final String clientId = "KeyboardEntry";
-private static final String eventTopic = "E/KeyboardEvent";
-private static final String statusTopic = "S/KeyboardEvent";
+    private static final String server = "tcp://localhost:1883";
+    private static final String clientId = "KeyboardEntry";
+    private static final String eventTopic = "E/KeyboardEvent";
+    private static final String statusTopic = "S/KeyboardEvent";
+
     static void main() throws MqttException {
-        MqttClient client = new MqttClient(server,clientId);
+        MqttClient client = new MqttClient(server, clientId);
         MqttConnectionOptions options = new MqttConnectionOptions();
         options.setCleanStart(true);
         options.setAutomaticReconnect(true);

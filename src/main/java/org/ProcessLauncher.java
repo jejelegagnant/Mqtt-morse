@@ -44,7 +44,7 @@ public class ProcessLauncher {
      * terminal open after the process finishes to aid in debugging.
      *
      * @param mainClass The fully qualified name of the class to run.
-     * @throws IOException if an I/O error occurs starting the process.
+     * @throws IOException          if an I/O error occurs starting the process.
      * @throws InterruptedException if the thread is interrupted.
      */
     private static void launchProcessInNewTerminal(String mainClass) throws IOException, InterruptedException {

@@ -153,6 +153,7 @@ public class MorseDisplay implements Runnable {
 
     /**
      * Helper method to display a dot or a dash.
+     *
      * @param signalDuration The time the panel should be lit (DOT_TIME or DASH_TIME).
      */
     private void displaySignal(int signalDuration) {
@@ -186,10 +187,12 @@ public class MorseDisplay implements Runnable {
 
         client.setCallback(new MqttCallback() {
             @Override
-            public void disconnected(MqttDisconnectResponse disconnectResponse) {}
+            public void disconnected(MqttDisconnectResponse disconnectResponse) {
+            }
 
             @Override
-            public void mqttErrorOccurred(MqttException exception) {}
+            public void mqttErrorOccurred(MqttException exception) {
+            }
 
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
@@ -209,29 +212,28 @@ public class MorseDisplay implements Runnable {
                         // Safely start the animation on the EDT
                         SwingUtilities.invokeLater(() -> morseDisplay.displayMorseMessage(messageMorse));
                     }
-                }
-                else if (topic.equals(converterStatusTopic)) {
-                    if (payload.equals("Offline")){
+                } else if (topic.equals(converterStatusTopic)) {
+                    if (payload.equals("Offline")) {
                         morseDisplay.morseAnimatorThread.interrupt();
                         SwingUtilities.invokeLater(() -> morseDisplay.changePanelColor(Color.RED));
                     }
-                    if (payload.equals("Online")){
+                    if (payload.equals("Online")) {
                         SwingUtilities.invokeLater(() -> morseDisplay.changePanelColor(Color.BLACK));
                     }
-                }
-                else if (topic.equals(keyboardStatusTopic)) {
-                    if (payload.equals("Offline")){
+                } else if (topic.equals(keyboardStatusTopic)) {
+                    if (payload.equals("Offline")) {
                         morseDisplay.morseAnimatorThread.interrupt();
                         SwingUtilities.invokeLater(() -> morseDisplay.changePanelColor(Color.MAGENTA));
                     }
-                    if (payload.equals("Online")){
+                    if (payload.equals("Online")) {
                         SwingUtilities.invokeLater(() -> morseDisplay.changePanelColor(Color.BLACK));
                     }
                 }
             }
 
             @Override
-            public void deliveryComplete(IMqttToken iMqttToken) {}
+            public void deliveryComplete(IMqttToken iMqttToken) {
+            }
 
             @Override
             public void connectComplete(boolean b, String s) {
@@ -246,7 +248,8 @@ public class MorseDisplay implements Runnable {
             }
 
             @Override
-            public void authPacketArrived(int i, MqttProperties mqttProperties) {}
+            public void authPacketArrived(int i, MqttProperties mqttProperties) {
+            }
         });
         client.connect(options);
     }
