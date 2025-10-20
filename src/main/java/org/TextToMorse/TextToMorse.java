@@ -96,7 +96,5 @@ public class TextToMorse {
         onlineMessage.setRetained(true);
         client.publish(outputStatusTopic, onlineMessage);
         System.out.println("Online status published" + onlineMessage);
-
-
     }
 }
