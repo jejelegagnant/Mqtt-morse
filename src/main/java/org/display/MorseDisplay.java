@@ -121,61 +121,6 @@ public class MorseDisplay implements Runnable {
         morseAnimatorThread.start();
     }
 
-    /**
-     * Processes one signal (dot, dash, or space) from the message.
-     * It uses a chain of timers to create non-blocking delays.
-     */
-    private void processNextSignal() {
-        // Stop if we've finished the message
-        if (morseIndex >= currentMorseMessage.length()) {
-            changePanelColor(Color.BLACK);
-            return;
-        }
-
-        char signal = currentMorseMessage.charAt(morseIndex);
-        morseIndex++; // Move to the next index for the next call
-
-        switch (signal) {
-            case '.':
-                displaySignal(DOT_TIME);
-                break;
-            case '-':
-                displaySignal(DASH_TIME);
-                break;
-            case ' ':
-                // This is a space between letters, just wait.
-                morseTimer = new Timer(INTER_CHAR_TIME, e -> processNextSignal());
-                morseTimer.setRepeats(false);
-                morseTimer.start();
-                break;
-        }
-    }
-
-    /**
-     * Helper method to display a dot or a dash.
-     *
-     * @param signalDuration The time the panel should be lit (DOT_TIME or DASH_TIME).
-     */
-    private void displaySignal(int signalDuration) {
-        changePanelColor(Color.ORANGE);
-
-        // First timer: Turn the panel OFF after the signal duration.
-        // Then, trigger the second timer for the intra-character gap.
-        ActionListener turnOffAction = e -> {
-            changePanelColor(Color.BLACK);
-
-            // Second timer: After the gap, process the next signal.
-            morseTimer = new Timer(INTRA_CHAR_TIME, e2 -> processNextSignal());
-            morseTimer.setRepeats(false);
-            morseTimer.start();
-        };
-
-        morseTimer = new Timer(signalDuration, turnOffAction);
-        morseTimer.setRepeats(false);
-        morseTimer.start();
-    }
-
-
     static void main() throws MqttException {
         MorseDisplay morseDisplay = new MorseDisplay();
         SwingUtilities.invokeLater(morseDisplay);
